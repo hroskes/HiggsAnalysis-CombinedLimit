@@ -560,7 +560,7 @@ class HZZAnomalousCouplingsFromHistogramsBase(SpinZeroHiggsBaseAC):
     def processPhysicsOptions(self,physOptions):
         processed = []
         for po in physOptions:
-            if po in ("fa3", "fa2", "fL1", "fL1Zg", "fa1"):
+            if po in ("fa3", "fa2", "fL1", "fa3Zg", "fa2Zg", "fL1Zg", "fa3gg", "fa2gg", "fa1"):
                 if po in self.anomalouscouplings: raise ValueError("Provided physOption "+po+" twice")
                 self.anomalouscouplings.append(po)
                 processed.append(po)
@@ -582,7 +582,7 @@ class HZZAnomalousCouplingsFromHistogramsBase(SpinZeroHiggsBaseAC):
 
         processed += super(HZZAnomalousCouplingsFromHistogramsBase, self).processPhysicsOptions(physOptions)
 
-        if not self.anomalouscouplings: raise ValueError("Have to provide an anomalous coupling as a physOption (fa3, fa2, fL1, fL1Zg)")
+        if not self.anomalouscouplings: raise ValueError("Have to provide an anomalous coupling as a physOption (fa3, fa2, fL1, fa3Zg, fa2Zg, fL1Zg, fa3gg, fa2gg)")
         return processed
 
     @property
@@ -591,10 +591,10 @@ class HZZAnomalousCouplingsFromHistogramsBase(SpinZeroHiggsBaseAC):
 
     @property
     def sortedcouplings(self):
-        return sorted(self.anomalouscouplings, key=["fa1", "fa3", "fa2", "fL1", "fL1Zg"].index)
+        return sorted(self.anomalouscouplings, key=["fa1", "fa3", "fa2", "fL1", "fa3Zg", "fa2Zg", "fL1Zg", "fa3gg", "fa2gg"].index)
 
     def faidefinitionorder(self, i):
-        #CMS_zz4l_fai1, CMS_zz4l_fai2, etc. correspond to fa3, fa2, fL1, fL1Zg in that order                                                                                                                                         
+        #CMS_zz4l_fai1, CMS_zz4l_fai2, etc. correspond to fa3, fa2, fL1, fa3Zg, fa2Zg, fL1Zg, fa3gg, fa2gg in that order                                                                                                                                         
         #However they might not be defined in that order, e.g. CMS_zz4l_fai1 might be restricted to (0, 1-CMS_zz4l_fai2)                                                                                                             
         return self.anomalouscouplings.index(self.sortedcouplings[i])
 
@@ -602,8 +602,8 @@ class HZZAnomalousCouplingsFromHistogramsBase(SpinZeroHiggsBaseAC):
         "(?P<production>gg|tt|bb|qq|Z|W|V)H_"
         "(?:(?P<Hffpure>0(?:PM|M)ff)_)?"
         "(?:"
-          "(?P<HVVpure>0(?:PM|M|PH|L1|L1Zg))|"
-          "(?P<HVVint>(?:g(?:1|2|4|1prime2|hzgs1prime2)[1234])*)_(?P<HVVintsign>positive|negative)"
+          "(?P<HVVpure>0(?:PM|M|PH|L1|L1Zg|MZg|PHZg|Mgg|PHgg))|"
+          "(?P<HVVint>(?:g(?:1|2|4|1prime2|hzgs1prime2|hzgs4|hzgs2|hgsgs4|hgsgs2)[1234])*)_(?P<HVVintsign>positive|negative)"
         ")$"
     )
 
@@ -617,12 +617,20 @@ class HZZAnomalousCouplingsFromHistogramsBase(SpinZeroHiggsBaseAC):
             "0PH": "g2",
             "0M": "g4",
             "0L1": "g1prime2",
+            "0MZg": "ghzgs4"
+            "0PHZg": "ghzgs2"
             "0L1Zg": "ghzgs1prime2",
+            "0Mgg": "ghgsgs4"
+            "0PHgg": "ghgsgs2"
             "fa1": "g1",
             "fa2": "g2",
             "fa3": "g4",
             "fL1": "g1prime2",
+            "fa3Zg": "ghzgs4"
+            "fa2Zg": "ghzgs2"
             "fL1Zg": "ghzgs1prime2",
+            "fa3gg": "ghgsgs4"
+            "fa2gg": "ghgsgs2"
         }[processorfai]
 
     def tellAboutProcess(self, bin, process):
@@ -655,13 +663,13 @@ class HZZAnomalousCouplingsFromHistogramsBase(SpinZeroHiggsBaseAC):
             powerdict = {self.getcouplingname(match.group("HVVpure")): maxpower}
             result += "_" + "".join("{}{}".format(k, v) for k, v in powerdict.iteritems())
         elif match.group("HVVint") is not None:
-            powerdict = {coupling: int(power) for coupling, power in re.findall("(g(?:1|2|4|1prime2|hzgs1prime2))([1234])", match.group("HVVint"))}
+            powerdict = {coupling: int(power) for coupling, power in re.findall("(g(?:1|2|4|1prime2|hzgs1prime2|hzgs4|hzgs2|hgsgs4|hgsgs2))([1234])", match.group("HVVint"))}
 
             if sum(powerdict.values()) != maxpower:
                 raise ValueError("power dict doesn't add up properly!  Sum should be {}\n{}\n{}".format(maxpower, process, powerdict))
 
             powerdict = collections.OrderedDict(
-                sorted(powerdict.iteritems(), key = lambda x: "g1 g4 g2 g1prime2 ghzgs1prime2".index(x[0]))
+                sorted(powerdict.iteritems(), key = lambda x: "g1 g4 g2 g1prime2 ghzgs4 ghzgs2 ghzgs1prime2 ghgsgs4 ghgsgs2".index(x[0]))
             )
 
             sign = match.group("HVVintsign")
@@ -705,7 +713,6 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
       "g2": 0.394465808268,
       "g4": 2.55052,
       "g1prime2": -4363.84210717,
-      "ghzgs1prime2": -7613.351302119843,
     }
 
     '''
@@ -714,7 +721,11 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
       "g2": 1.65684,
       "g4": 2.55052,
       "g1prime2": -12100.42,
+      "ghzgs4": "Savvas please fill",
+      "ghzgs2": "Savvas please fill",
       "ghzgs1prime2": -7613.351302119843,
+      "ghgsgs4": "Savvas please fill",
+      "ghgsgs2": "Savvas please fill",
     }
 
 
@@ -747,7 +758,7 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
     def processPhysicsOptions(self,physOptions):
         processed = []
         for po in physOptions:
-            if po in ("fa3", "fa2", "fL1", "fL1Zg", "fa1"):
+            if po in ("fa3", "fa2", "fL1", "fa3Zg", "fa2Zg", "fL1Zg", "fa3gg", "fa2gg", "fa1"):
                 if po in self.anomalouscouplings: raise ValueError("Provided physOption "+po+" twice")
                 self.anomalouscouplings.append(po)
                 processed.append(po)
@@ -769,7 +780,7 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
 
         processed += super(HZZAnomalousCouplingsFromHistogramsNonSMEFT, self).processPhysicsOptions(physOptions)
 
-        if not self.anomalouscouplings: raise ValueError("Have to provide an anomalous coupling as a physOption (fa3, fa2, fL1, fL1Zg)")
+        if not self.anomalouscouplings: raise ValueError("Have to provide an anomalous coupling as a physOption (fa3, fa2, fL1, fa3Zg, fa2Zg, fL1Zg, fa3gg, fa2gg)")
         return processed
 
     @property
@@ -778,10 +789,10 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
 
     @property
     def sortedcouplings(self):
-        return sorted(self.anomalouscouplings, key=["fa1", "fa3", "fa2", "fL1", "fL1Zg"].index)
+        return sorted(self.anomalouscouplings, key=["fa1", "fa3", "fa2", "fL1", "fa3Zg", "fa2Zg", "fL1Zg", "fa3gg", "fa2gg"].index)
 
     def faidefinitionorder(self, i):
-        #CMS_zz4l_fai1, CMS_zz4l_fai2, etc. correspond to fa3, fa2, fL1, fL1Zg in that order
+        #CMS_zz4l_fai1, CMS_zz4l_fai2, etc. correspond to fa3, fa2, fL1, fa3Zg, fa2Zg, fL1Zg, fa3gg, fa2gg in that order
         #However they might not be defined in that order, e.g. CMS_zz4l_fai1 might be restricted to (0, 1-CMS_zz4l_fai2)
         return self.anomalouscouplings.index(self.sortedcouplings[i])
 
@@ -835,7 +846,11 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
                     "g4": 1,
                     "g2": 1,
                     "g1prime2": 10000,
+                    "ghzgs4": 1,
+                    "ghzgs2": 1,
                     "ghzgs1prime2": 10000,
+                    "ghgsgs4": 1,
+                    "ghgsgs2": 1,
                 }[ai]
             else:
                 divideby = 1
@@ -904,8 +919,8 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
         "(?P<production>gg|tt|bb|qq|Z|W|V)H_"
         "(?:(?P<Hffpure>0(?:PM|M)ff)_)?"
         "(?:"
-          "(?P<HVVpure>0(?:PM|M|PH|L1|L1Zg))|"
-          "(?P<HVVint>(?:g(?:1|2|4|1prime2|hzgs1prime2)[1234])*)_(?P<HVVintsign>positive|negative)"
+          "(?P<HVVpure>0(?:PM|M|PH|L1|L1Zg|MZg|PHZg|Mgg|PHgg))|"
+          "(?P<HVVint>(?:g(?:1|2|4|1prime2|hzgs1prime2|hzgs4|hzgs2|hgsgs4|hgsgs2)[1234])*)_(?P<HVVintsign>positive|negative)"
         ")$"
     )
 
@@ -919,12 +934,20 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
             "0PH": "g2",
             "0M": "g4",
             "0L1": "g1prime2",
+            "0MZg": "ghzgs4"
+            "0PHZg": "ghzgs2"
             "0L1Zg": "ghzgs1prime2",
+            "0Mgg": "ghgsgs4"
+            "0PHgg": "ghgsgs2"
             "fa1": "g1",
             "fa2": "g2",
             "fa3": "g4",
             "fL1": "g1prime2",
+            "fa3Zg": "ghzgs4"
+            "fa2Zg": "ghzgs2"
             "fL1Zg": "ghzgs1prime2",
+            "fa3gg": "ghgsgs4"
+            "fa2gg": "ghgsgs2"
         }[processorfai]
 
     def tellAboutProcess(self, bin, process):
@@ -958,13 +981,13 @@ class HZZAnomalousCouplingsFromHistogramsNonSMEFT(MultiSignalSpinZeroHiggsAC):
             powerdict = {self.getcouplingname(match.group("HVVpure")): maxpower}
             result += "_" + "".join("{}{}".format(k, v) for k, v in powerdict.iteritems())
         elif match.group("HVVint") is not None:
-            powerdict = {coupling: int(power) for coupling, power in re.findall("(g(?:1|2|4|1prime2|hzgs1prime2))([1234])", match.group("HVVint"))}
+            powerdict = {coupling: int(power) for coupling, power in re.findall("(g(?:1|2|4|1prime2|hzgs1prime2|hzgs4|hzgs2|hgsgs4|hgsgs2))([1234])", match.group("HVVint"))}
 
             if sum(powerdict.values()) != maxpower:
                 raise ValueError("power dict doesn't add up properly!  Sum should be {}\n{}\n{}".format(maxpower, process, powerdict))
 
             powerdict = collections.OrderedDict(
-                sorted(powerdict.iteritems(), key = lambda x: "g1 g4 g2 g1prime2 ghzgs1prime2".index(x[0]))
+                sorted(powerdict.iteritems(), key = lambda x: "g1 g4 g2 g1prime2 ghzgs4 ghzgs2 ghzgs1prime2 ghgsgs4 ghgsgs2".index(x[0]))
             )
 
             sign = match.group("HVVintsign")
@@ -1003,22 +1026,12 @@ class HZZAnomalousCouplingsFromHistograms(MultiSignalSpinZeroHiggsAC):
 
     HERE FOR EFT XSECTIONS
 
-    
-    
-    aidecay = {
-      "g2": 1.65684,
-      "g4": 2.55052,
-      "g1prime2": -12100.42,
-      "ghzgs1prime2": -7613.351302119843,
-    }
-
     '''
 
     aidecay = {
       "g2": 0.394465808268,
       "g4": 2.55052,
       "g1prime2": -4363.84210717,
-      "ghzgs1prime2": -7613.351302119843,
     }
 
     
@@ -1053,7 +1066,7 @@ class HZZAnomalousCouplingsFromHistograms(MultiSignalSpinZeroHiggsAC):
     def processPhysicsOptions(self,physOptions):
         processed = []
         for po in physOptions:
-            if po in ("fa3", "fa2", "fL1", "fL1Zg", "fa1"):
+            if po in ("fa3", "fa2", "fL1", "fa1"):
                 if po in self.anomalouscouplings: raise ValueError("Provided physOption "+po+" twice")
                 self.anomalouscouplings.append(po)
                 processed.append(po)
@@ -1075,7 +1088,7 @@ class HZZAnomalousCouplingsFromHistograms(MultiSignalSpinZeroHiggsAC):
 
         processed += super(HZZAnomalousCouplingsFromHistograms, self).processPhysicsOptions(physOptions)
 
-        if not self.anomalouscouplings: raise ValueError("Have to provide an anomalous coupling as a physOption (fa3, fa2, fL1, fL1Zg)")
+        if not self.anomalouscouplings: raise ValueError("Have to provide an anomalous coupling as a physOption (fa3, fa2, fL1)")
         return processed
 
     @property
@@ -1084,10 +1097,10 @@ class HZZAnomalousCouplingsFromHistograms(MultiSignalSpinZeroHiggsAC):
 
     @property
     def sortedcouplings(self):
-        return sorted(self.anomalouscouplings, key=["fa1", "fa3", "fa2", "fL1", "fL1Zg"].index)
+        return sorted(self.anomalouscouplings, key=["fa1", "fa3", "fa2", "fL1"].index)
 
     def faidefinitionorder(self, i):
-        #CMS_zz4l_fai1, CMS_zz4l_fai2, etc. correspond to fa3, fa2, fL1, fL1Zg in that order
+        #CMS_zz4l_fai1, CMS_zz4l_fai2, etc. correspond to fa3, fa2, fL1 in that order
         #However they might not be defined in that order, e.g. CMS_zz4l_fai1 might be restricted to (0, 1-CMS_zz4l_fai2)
         return self.anomalouscouplings.index(self.sortedcouplings[i])
 
@@ -1141,7 +1154,6 @@ class HZZAnomalousCouplingsFromHistograms(MultiSignalSpinZeroHiggsAC):
                     "g4": 1,
                     "g2": 1,
                     "g1prime2": 10000,
-                    "ghzgs1prime2": 10000,
                 }[ai]
             else:
                 divideby = 1
@@ -1210,8 +1222,8 @@ class HZZAnomalousCouplingsFromHistograms(MultiSignalSpinZeroHiggsAC):
         "(?P<production>gg|tt|bb|qq|Z|W|V)H_"
         "(?:(?P<Hffpure>0(?:PM|M)ff)_)?"
         "(?:"
-          "(?P<HVVpure>0(?:PM|M|PH|L1|L1Zg))|"
-          "(?P<HVVint>(?:g(?:1|2|4|1prime2|hzgs1prime2)[1234])*)_(?P<HVVintsign>positive|negative)"
+          "(?P<HVVpure>0(?:PM|M|PH|L1))|"
+          "(?P<HVVint>(?:g(?:1|2|4|1prime2)[1234])*)_(?P<HVVintsign>positive|negative)"
         ")$"
     )
 
@@ -1225,12 +1237,10 @@ class HZZAnomalousCouplingsFromHistograms(MultiSignalSpinZeroHiggsAC):
             "0PH": "g2",
             "0M": "g4",
             "0L1": "g1prime2",
-            "0L1Zg": "ghzgs1prime2",
             "fa1": "g1",
             "fa2": "g2",
             "fa3": "g4",
             "fL1": "g1prime2",
-            "fL1Zg": "ghzgs1prime2",
         }[processorfai]
 
     def tellAboutProcess(self, bin, process):
@@ -1264,13 +1274,13 @@ class HZZAnomalousCouplingsFromHistograms(MultiSignalSpinZeroHiggsAC):
             powerdict = {self.getcouplingname(match.group("HVVpure")): maxpower}
             result += "_" + "".join("{}{}".format(k, v) for k, v in powerdict.iteritems())
         elif match.group("HVVint") is not None:
-            powerdict = {coupling: int(power) for coupling, power in re.findall("(g(?:1|2|4|1prime2|hzgs1prime2))([1234])", match.group("HVVint"))}
+            powerdict = {coupling: int(power) for coupling, power in re.findall("(g(?:1|2|4|1prime2))([1234])", match.group("HVVint"))}
 
             if sum(powerdict.values()) != maxpower:
                 raise ValueError("power dict doesn't add up properly!  Sum should be {}\n{}\n{}".format(maxpower, process, powerdict))
 
             powerdict = collections.OrderedDict(
-                sorted(powerdict.iteritems(), key = lambda x: "g1 g4 g2 g1prime2 ghzgs1prime2".index(x[0]))
+                sorted(powerdict.iteritems(), key = lambda x: "g1 g4 g2 g1prime2".index(x[0]))
             )
 
             sign = match.group("HVVintsign")
